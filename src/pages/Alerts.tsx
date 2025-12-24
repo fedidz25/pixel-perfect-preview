@@ -9,99 +9,41 @@ import {
   CheckCircle,
   Bell,
   BellOff,
+  RefreshCw,
+  Loader2,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAlerts, Alert } from "@/hooks/useAlerts";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 
-const alerts = [
-  {
-    id: 1,
-    type: "stock",
-    severity: "critical",
-    title: "Rupture de stock",
-    message: "Coca-Cola 1L - 0 unités restantes",
-    icon: Package,
-    time: "Il y a 2h",
-    read: false,
-  },
-  {
-    id: 2,
-    type: "expiry",
-    severity: "critical",
-    title: "Péremption imminente",
-    message: "Pain de mie - Expire demain",
-    icon: Calendar,
-    time: "Il y a 3h",
-    read: false,
-  },
-  {
-    id: 3,
-    type: "credit",
-    severity: "critical",
-    title: "Créance en retard",
-    message: "Fatima Z. - 15,000 DA (35 jours)",
-    icon: Users,
-    time: "Il y a 5h",
-    read: false,
-  },
-  {
-    id: 4,
-    type: "stock",
-    severity: "warning",
-    title: "Stock faible",
-    message: "Lait Candia 1L - 5 unités restantes",
-    icon: Package,
-    time: "Il y a 6h",
-    read: false,
-  },
-  {
-    id: 5,
-    type: "expiry",
-    severity: "warning",
-    title: "Péremption proche",
-    message: "Yaourt Danone x4 - Expire dans 5 jours",
-    icon: Calendar,
-    time: "Il y a 8h",
-    read: true,
-  },
-  {
-    id: 6,
-    type: "stock",
-    severity: "critical",
-    title: "Rupture de stock",
-    message: "Chips Lay's 100g - 0 unités restantes",
-    icon: Package,
-    time: "Hier",
-    read: true,
-  },
-  {
-    id: 7,
-    type: "credit",
-    severity: "warning",
-    title: "Créance à surveiller",
-    message: "Karim M. - 8,500 DA (25 jours)",
-    icon: Users,
-    time: "Hier",
-    read: true,
-  },
-  {
-    id: 8,
-    type: "stock",
-    severity: "warning",
-    title: "Stock faible",
-    message: "Riz 1kg - 8 unités restantes",
-    icon: Package,
-    time: "Hier",
-    read: true,
-  },
-];
+const getAlertIcon = (type: string) => {
+  switch (type) {
+    case "stock":
+      return Package;
+    case "expiry":
+      return Calendar;
+    case "credit":
+      return Users;
+    default:
+      return AlertTriangle;
+  }
+};
 
 function AlertCard({
   alert,
   index,
+  onMarkAsRead,
+  onDelete,
 }: {
-  alert: (typeof alerts)[0];
+  alert: Alert;
   index: number;
+  onMarkAsRead: (id: string) => void;
+  onDelete: (id: string) => void;
 }) {
+  const Icon = getAlertIcon(alert.type);
+
   return (
     <div
       className={cn(
@@ -109,7 +51,7 @@ function AlertCard({
         alert.severity === "critical"
           ? "border-l-4 border-l-destructive border-t-border border-r-border border-b-border"
           : "border-l-4 border-l-warning border-t-border border-r-border border-b-border",
-        !alert.read && "bg-secondary/30"
+        !alert.is_read && "bg-secondary/30"
       )}
       style={{ animationDelay: `${index * 50}ms` }}
     >
@@ -123,7 +65,7 @@ function AlertCard({
                 : "bg-warning/10 text-warning"
             )}
           >
-            <alert.icon className="h-5 w-5" />
+            <Icon className="h-5 w-5" />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -137,20 +79,36 @@ function AlertCard({
               >
                 {alert.title}
               </p>
-              {!alert.read && (
+              {!alert.is_read && (
                 <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
               )}
             </div>
             <p className="text-foreground">{alert.message}</p>
-            <p className="text-sm text-muted-foreground mt-1">{alert.time}</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              {formatDistanceToNow(new Date(alert.created_at), {
+                addSuffix: true,
+                locale: fr,
+              })}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            Résoudre
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <BellOff className="h-4 w-4" />
+          {!alert.is_read && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onMarkAsRead(alert.id)}
+            >
+              Marquer lu
+            </Button>
+          )}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8 text-destructive"
+            onClick={() => onDelete(alert.id)}
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -159,9 +117,18 @@ function AlertCard({
 }
 
 export default function Alerts() {
+  const { 
+    alerts, 
+    isLoading, 
+    markAsRead, 
+    markAllAsRead, 
+    deleteAlert,
+    generateAlerts 
+  } = useAlerts();
+
   const criticalAlerts = alerts.filter((a) => a.severity === "critical");
   const warningAlerts = alerts.filter((a) => a.severity === "warning");
-  const unreadCount = alerts.filter((a) => !a.read).length;
+  const unreadCount = alerts.filter((a) => !a.is_read).length;
 
   return (
     <DashboardLayout>
@@ -175,7 +142,25 @@ export default function Alerts() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => generateAlerts.mutate()}
+              disabled={generateAlerts.isPending}
+            >
+              {generateAlerts.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Actualiser
+            </Button>
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => markAllAsRead.mutate()}
+              disabled={markAllAsRead.isPending || unreadCount === 0}
+            >
               <CheckCircle className="h-4 w-4" />
               Tout marquer comme lu
             </Button>
@@ -216,8 +201,8 @@ export default function Alerts() {
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-sm text-success/80">Résolues cette semaine</p>
-                <p className="text-2xl font-bold text-success">12</p>
+                <p className="text-sm text-success/80">Total alertes</p>
+                <p className="text-2xl font-bold text-success">{alerts.length}</p>
               </div>
             </div>
           </div>
@@ -246,23 +231,67 @@ export default function Alerts() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="all" className="space-y-3">
-            {alerts.map((alert, index) => (
-              <AlertCard key={alert.id} alert={alert} index={index} />
-            ))}
-          </TabsContent>
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <TabsContent value="all" className="space-y-3">
+                {alerts.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Aucune alerte. Cliquez sur "Actualiser" pour vérifier.
+                  </div>
+                ) : (
+                  alerts.map((alert, index) => (
+                    <AlertCard 
+                      key={alert.id} 
+                      alert={alert} 
+                      index={index}
+                      onMarkAsRead={(id) => markAsRead.mutate(id)}
+                      onDelete={(id) => deleteAlert.mutate(id)}
+                    />
+                  ))
+                )}
+              </TabsContent>
 
-          <TabsContent value="critical" className="space-y-3">
-            {criticalAlerts.map((alert, index) => (
-              <AlertCard key={alert.id} alert={alert} index={index} />
-            ))}
-          </TabsContent>
+              <TabsContent value="critical" className="space-y-3">
+                {criticalAlerts.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Aucune alerte urgente
+                  </div>
+                ) : (
+                  criticalAlerts.map((alert, index) => (
+                    <AlertCard 
+                      key={alert.id} 
+                      alert={alert} 
+                      index={index}
+                      onMarkAsRead={(id) => markAsRead.mutate(id)}
+                      onDelete={(id) => deleteAlert.mutate(id)}
+                    />
+                  ))
+                )}
+              </TabsContent>
 
-          <TabsContent value="warning" className="space-y-3">
-            {warningAlerts.map((alert, index) => (
-              <AlertCard key={alert.id} alert={alert} index={index} />
-            ))}
-          </TabsContent>
+              <TabsContent value="warning" className="space-y-3">
+                {warningAlerts.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    Aucune alerte importante
+                  </div>
+                ) : (
+                  warningAlerts.map((alert, index) => (
+                    <AlertCard 
+                      key={alert.id} 
+                      alert={alert} 
+                      index={index}
+                      onMarkAsRead={(id) => markAsRead.mutate(id)}
+                      onDelete={(id) => deleteAlert.mutate(id)}
+                    />
+                  ))
+                )}
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>
