@@ -19,15 +19,14 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus,
   Search,
   Filter,
   Download,
-  Upload,
   MoreHorizontal,
   Edit,
   Trash2,
   Package,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -36,129 +35,60 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useProducts } from "@/hooks/useProducts";
+import { AddProductDialog } from "@/components/products/AddProductDialog";
+import { ImportExcelDialog } from "@/components/products/ImportExcelDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const products = [
-  {
-    id: 1,
-    name: "Coca-Cola 1L",
-    barcode: "5449000000439",
-    category: "Boissons",
-    purchasePrice: 120,
-    sellingPrice: 150,
-    stock: 0,
-    status: "rupture",
-  },
-  {
-    id: 2,
-    name: "Lait Candia 1L",
-    barcode: "6111234567890",
-    category: "Produits laitiers",
-    purchasePrice: 90,
-    sellingPrice: 110,
-    stock: 5,
-    status: "faible",
-  },
-  {
-    id: 3,
-    name: "Pain de mie",
-    barcode: "6111987654321",
-    category: "Boulangerie",
-    purchasePrice: 100,
-    sellingPrice: 130,
-    stock: 24,
-    status: "ok",
-  },
-  {
-    id: 4,
-    name: "Huile de tournesol 1L",
-    barcode: "6111111222333",
-    category: "Épicerie",
-    purchasePrice: 280,
-    sellingPrice: 350,
-    stock: 42,
-    status: "ok",
-  },
-  {
-    id: 5,
-    name: "Riz 1kg",
-    barcode: "6111444555666",
-    category: "Épicerie",
-    purchasePrice: 180,
-    sellingPrice: 220,
-    stock: 8,
-    status: "faible",
-  },
-  {
-    id: 6,
-    name: "Yaourt Danone x4",
-    barcode: "6111777888999",
-    category: "Produits laitiers",
-    purchasePrice: 160,
-    sellingPrice: 200,
-    stock: 35,
-    status: "ok",
-  },
-  {
-    id: 7,
-    name: "Chips Lay's 100g",
-    barcode: "5000127502567",
-    category: "Snacks",
-    purchasePrice: 80,
-    sellingPrice: 100,
-    stock: 0,
-    status: "rupture",
-  },
-  {
-    id: 8,
-    name: "Eau Guedila 1.5L",
-    barcode: "6111000111222",
-    category: "Boissons",
-    purchasePrice: 35,
-    sellingPrice: 45,
-    stock: 72,
-    status: "ok",
-  },
-];
-
-function getStockBadge(status: string, stock: number) {
-  switch (status) {
-    case "rupture":
-      return (
-        <Badge variant="destructive" className="gap-1">
-          <span className="h-2 w-2 rounded-full bg-current" />
-          Rupture
-        </Badge>
-      );
-    case "faible":
-      return (
-        <Badge className="bg-warning text-warning-foreground gap-1">
-          <span className="h-2 w-2 rounded-full bg-current" />
-          {stock} unités
-        </Badge>
-      );
-    default:
-      return (
-        <Badge className="bg-success/10 text-success gap-1 border-success/20">
-          {stock} unités
-        </Badge>
-      );
+function getStockBadge(stock: number, threshold: number = 10) {
+  if (stock === 0) {
+    return (
+      <Badge variant="destructive" className="gap-1">
+        <span className="h-2 w-2 rounded-full bg-current" />
+        Rupture
+      </Badge>
+    );
   }
+  if (stock <= threshold) {
+    return (
+      <Badge className="bg-warning text-warning-foreground gap-1">
+        <span className="h-2 w-2 rounded-full bg-current" />
+        {stock} unités
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="bg-success/10 text-success gap-1 border-success/20">
+      {stock} unités
+    </Badge>
+  );
 }
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const { products, isLoading, deleteProduct } = useProducts();
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.barcode.includes(searchQuery);
-    const matchesCategory =
-      categoryFilter === "all" || product.category === categoryFilter;
-    return matchesSearch && matchesCategory;
+      (product.barcode && product.barcode.includes(searchQuery));
+    return matchesSearch;
   });
 
-  const categories = [...new Set(products.map((p) => p.category))];
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-96">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
