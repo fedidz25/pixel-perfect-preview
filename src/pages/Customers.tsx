@@ -24,6 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useCustomers } from "@/hooks/useCustomers";
 import { AddCustomerDialog } from "@/components/customers/AddCustomerDialog";
+import { CustomerCreditsDialog } from "@/components/customers/CustomerCreditsDialog";
 
 function getDebtBadge(debt: number) {
   if (debt === 0) {
@@ -210,6 +211,18 @@ export default function Customers() {
                       <TableCell>{getDebtBadge(Number(customer.total_debt))}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {Number(customer.total_debt) > 0 && (
+                            <CustomerCreditsDialog
+                              customerId={customer.id}
+                              customerName={customer.name}
+                              totalDebt={Number(customer.total_debt)}
+                              trigger={
+                                <Button variant="outline" size="icon" className="h-8 w-8">
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                              }
+                            />
+                          )}
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Eye className="h-4 w-4" />
                           </Button>
