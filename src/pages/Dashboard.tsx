@@ -10,15 +10,20 @@ import {
   Package,
   AlertTriangle,
 } from "lucide-react";
+import { useDashboard } from "@/hooks/useDashboard";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Dashboard() {
+  const { stats, isLoading } = useDashboard();
+  const { user } = useAuth();
+
   return (
     <DashboardLayout>
       <div className="p-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Bonjour, Ahmed 👋
+            Bonjour 👋
           </h1>
           <p className="text-muted-foreground">
             Voici un aperçu de votre commerce aujourd'hui
@@ -34,8 +39,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
             title="Chiffre d'affaires du jour"
-            value="52,400 DA"
-            change="+15.2% vs hier"
+            value={`${stats.todayRevenue.toLocaleString()} DA`}
             changeType="positive"
             icon={TrendingUp}
             iconColor="bg-success/10 text-success"
@@ -43,8 +47,7 @@ export default function Dashboard() {
           />
           <StatsCard
             title="Ventes aujourd'hui"
-            value="47"
-            change="+8 ventes vs hier"
+            value={stats.todaySalesCount.toString()}
             changeType="positive"
             icon={ShoppingCart}
             iconColor="bg-primary/10 text-primary"
@@ -52,18 +55,18 @@ export default function Dashboard() {
           />
           <StatsCard
             title="Produits en stock"
-            value="1,248"
-            change="12 en rupture"
-            changeType="negative"
+            value={stats.productsCount.toString()}
+            change={stats.lowStockCount > 0 ? `${stats.lowStockCount} en rupture` : undefined}
+            changeType={stats.lowStockCount > 0 ? "negative" : "neutral"}
             icon={Package}
             iconColor="bg-info/10 text-info"
             delay={200}
           />
           <StatsCard
             title="Alertes actives"
-            value="8"
-            change="4 urgentes"
-            changeType="negative"
+            value={stats.alertsCount.toString()}
+            change={stats.criticalAlertsCount > 0 ? `${stats.criticalAlertsCount} urgentes` : undefined}
+            changeType={stats.criticalAlertsCount > 0 ? "negative" : "neutral"}
             icon={AlertTriangle}
             iconColor="bg-destructive/10 text-destructive"
             delay={300}
