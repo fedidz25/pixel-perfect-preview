@@ -10,17 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   Search,
-  Filter,
   Download,
   MoreHorizontal,
   Edit,
@@ -28,7 +20,6 @@ import {
   Package,
   Loader2,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,12 +29,8 @@ import {
 import { useProducts } from "@/hooks/useProducts";
 import { AddProductDialog } from "@/components/products/AddProductDialog";
 import { ImportExcelDialog } from "@/components/products/ImportExcelDialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import * as XLSX from "xlsx";
+import { useToast } from "@/hooks/use-toast";
 
 function getStockBadge(stock: number, threshold: number = 10) {
   if (stock === 0) {
@@ -72,6 +59,7 @@ function getStockBadge(stock: number, threshold: number = 10) {
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
   const { products, isLoading, deleteProduct } = useProducts();
+  const { toast } = useToast();
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
@@ -79,6 +67,32 @@ export default function Products() {
       (product.barcode && product.barcode.includes(searchQuery));
     return matchesSearch;
   });
+
+  const handleExport = () => {
+    const exportData = products.map(p => ({
+      nom: p.name,
+      "code-barres": p.barcode || "",
+      prix_achat: p.purchase_price,
+      prix_vente: p.selling_price,
+      stock: p.stock_quantity,
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Produits");
+    XLSX.writeFile(wb, "produits_stock_dz.xlsx");
+    
+    toast({
+      title: "Export réussi",
+      description: `${products.length} produits exportés`,
+    });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) {
+      await deleteProduct.mutateAsync(id);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -102,18 +116,12 @@ export default function Products() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2">
-              <Upload className="h-4 w-4" />
-              Importer
-            </Button>
-            <Button variant="outline" className="gap-2">
+            <ImportExcelDialog />
+            <Button variant="outline" className="gap-2" onClick={handleExport}>
               <Download className="h-4 w-4" />
               Exporter
             </Button>
-            <Button variant="gold" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Ajouter produit
-            </Button>
+            <AddProductDialog />
           </div>
         </div>
 
@@ -129,90 +137,98 @@ export default function Products() {
                 className="pl-10"
               />
             </div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Catégorie" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les catégories</SelectItem>
-                {categories.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
 
         {/* Products Table */}
         <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                <TableHead className="font-semibold">Produit</TableHead>
-                <TableHead className="font-semibold">Code-barres</TableHead>
-                <TableHead className="font-semibold">Catégorie</TableHead>
-                <TableHead className="font-semibold text-right">Prix achat</TableHead>
-                <TableHead className="font-semibold text-right">Prix vente</TableHead>
-                <TableHead className="font-semibold">Stock</TableHead>
-                <TableHead className="font-semibold text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredProducts.map((product, index) => (
-                <TableRow
-                  key={product.id}
-                  className="opacity-0 animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <span className="font-medium">{product.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <code className="text-xs bg-secondary px-2 py-1 rounded">
-                      {product.barcode}
-                    </code>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{product.category}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {product.purchasePrice} DA
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {product.sellingPrice} DA
-                  </TableCell>
-                  <TableCell>{getStockBadge(product.status, product.stock)}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2">
-                          <Edit className="h-4 w-4" />
-                          Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2 text-destructive">
-                          <Trash2 className="h-4 w-4" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+          {filteredProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="h-16 w-16 rounded-2xl bg-secondary flex items-center justify-center mb-4">
+                <Package className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Aucun produit
+              </h3>
+              <p className="text-muted-foreground text-center mb-4">
+                {searchQuery
+                  ? "Aucun produit ne correspond à votre recherche"
+                  : "Commencez par ajouter vos premiers produits"}
+              </p>
+              {!searchQuery && <AddProductDialog />}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/50 hover:bg-secondary/50">
+                  <TableHead className="font-semibold">Produit</TableHead>
+                  <TableHead className="font-semibold">Code-barres</TableHead>
+                  <TableHead className="font-semibold text-right">Prix achat</TableHead>
+                  <TableHead className="font-semibold text-right">Prix vente</TableHead>
+                  <TableHead className="font-semibold">Stock</TableHead>
+                  <TableHead className="font-semibold text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.map((product, index) => (
+                  <TableRow
+                    key={product.id}
+                    className="opacity-0 animate-fade-in"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center">
+                          <Package className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <span className="font-medium">{product.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {product.barcode ? (
+                        <code className="text-xs bg-secondary px-2 py-1 rounded">
+                          {product.barcode}
+                        </code>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {product.purchase_price} DA
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {product.selling_price} DA
+                    </TableCell>
+                    <TableCell>
+                      {getStockBadge(product.stock_quantity, product.stock_alert_threshold)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem className="gap-2">
+                            <Edit className="h-4 w-4" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="gap-2 text-destructive"
+                            onClick={() => handleDelete(product.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </DashboardLayout>
