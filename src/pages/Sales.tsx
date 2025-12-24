@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus,
   Search,
   Calendar,
   Download,
@@ -19,84 +19,64 @@ import {
   CreditCard,
   Wallet,
   ShoppingCart,
+  Loader2,
 } from "lucide-react";
-
-const sales = [
-  {
-    id: "VNT-001245",
-    date: "24/12/2024 14:32",
-    customer: "Mohamed B.",
-    items: 5,
-    total: 2500,
-    paymentMethod: "cash",
-    status: "completed",
-  },
-  {
-    id: "VNT-001244",
-    date: "24/12/2024 14:15",
-    customer: "Fatima Z.",
-    items: 3,
-    total: 1200,
-    paymentMethod: "credit",
-    status: "pending",
-  },
-  {
-    id: "VNT-001243",
-    date: "24/12/2024 13:48",
-    customer: "Ahmed K.",
-    items: 8,
-    total: 4800,
-    paymentMethod: "cash",
-    status: "completed",
-  },
-  {
-    id: "VNT-001242",
-    date: "24/12/2024 12:22",
-    customer: "Yasmina H.",
-    items: 2,
-    total: 650,
-    paymentMethod: "cash",
-    status: "completed",
-  },
-  {
-    id: "VNT-001241",
-    date: "24/12/2024 11:55",
-    customer: "Karim M.",
-    items: 6,
-    total: 3100,
-    paymentMethod: "credit",
-    status: "pending",
-  },
-  {
-    id: "VNT-001240",
-    date: "24/12/2024 10:30",
-    customer: "Sara L.",
-    items: 4,
-    total: 1850,
-    paymentMethod: "cash",
-    status: "completed",
-  },
-  {
-    id: "VNT-001239",
-    date: "24/12/2024 09:15",
-    customer: "Amine R.",
-    items: 7,
-    total: 5200,
-    paymentMethod: "cash",
-    status: "completed",
-  },
-  {
-    id: "VNT-001238",
-    date: "23/12/2024 18:45",
-    customer: "Leila D.",
-    items: 3,
-    total: 980,
-    paymentMethod: "credit",
-    status: "completed",
-  },
-];
+import { useSales } from "@/hooks/useSales";
+import { NewSaleDialog } from "@/components/sales/NewSaleDialog";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import * as XLSX from "xlsx";
 
 export default function Sales() {
+  const { sales, isLoading } = useSales();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredSales = useMemo(() => {
+    return sales.filter((sale) =>
+      sale.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sale.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [sales, searchTerm]);
+
+  const todaySales = useMemo(() => {
+    const today = new Date().toDateString();
+    return sales.filter(
+      (sale) => new Date(sale.created_at).toDateString() === today
+    );
+  }, [sales]);
+
+  const todayTotal = useMemo(() => {
+    return todaySales.reduce((sum, sale) => sum + Number(sale.total_amount), 0);
+  }, [todaySales]);
+
+  const todayCash = useMemo(() => {
+    return todaySales
+      .filter((sale) => sale.payment_method === "cash")
+      .reduce((sum, sale) => sum + Number(sale.total_amount), 0);
+  }, [todaySales]);
+
+  const todayCredit = useMemo(() => {
+    return todaySales
+      .filter((sale) => sale.payment_method === "credit")
+      .reduce((sum, sale) => sum + Number(sale.total_amount), 0);
+  }, [todaySales]);
+
+  const handleExport = () => {
+    const exportData = filteredSales.map((sale) => ({
+      ID: sale.id.slice(0, 8),
+      "Date & Heure": format(new Date(sale.created_at), "dd/MM/yyyy HH:mm", { locale: fr }),
+      Client: sale.customers?.name || "Client anonyme",
+      Total: sale.total_amount,
+      Paiement: sale.payment_method === "cash" ? "Espèces" : "Crédit",
+      Statut: sale.status === "completed" ? "Complétée" : "En attente",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ventes");
+    XLSX.writeFile(workbook, `ventes_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
+
   return (
     <DashboardLayout>
       <div className="p-8">
@@ -105,18 +85,15 @@ export default function Sales() {
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Ventes</h1>
             <p className="text-muted-foreground">
-              Historique des transactions • Aujourd'hui: 47 ventes
+              Historique des transactions • Aujourd'hui: {todaySales.length} ventes
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" onClick={handleExport}>
               <Download className="h-4 w-4" />
               Exporter
             </Button>
-            <Button variant="gold" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nouvelle vente
-            </Button>
+            <NewSaleDialog />
           </div>
         </div>
 
@@ -126,7 +103,9 @@ export default function Sales() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total du jour</p>
-                <p className="text-2xl font-bold text-foreground">52,400 DA</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {todayTotal.toLocaleString()} DA
+                </p>
               </div>
               <div className="p-3 rounded-xl bg-success/10">
                 <ShoppingCart className="h-6 w-6 text-success" />
@@ -137,7 +116,9 @@ export default function Sales() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Paiements espèces</p>
-                <p className="text-2xl font-bold text-foreground">38,200 DA</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {todayCash.toLocaleString()} DA
+                </p>
               </div>
               <div className="p-3 rounded-xl bg-primary/10">
                 <Wallet className="h-6 w-6 text-primary" />
@@ -148,7 +129,9 @@ export default function Sales() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Créances du jour</p>
-                <p className="text-2xl font-bold text-foreground">14,200 DA</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {todayCredit.toLocaleString()} DA
+                </p>
               </div>
               <div className="p-3 rounded-xl bg-warning/10">
                 <CreditCard className="h-6 w-6 text-warning" />
@@ -164,6 +147,8 @@ export default function Sales() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher par ID ou client..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -176,81 +161,95 @@ export default function Sales() {
 
         {/* Sales Table */}
         <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                <TableHead className="font-semibold">ID</TableHead>
-                <TableHead className="font-semibold">Date & Heure</TableHead>
-                <TableHead className="font-semibold">Client</TableHead>
-                <TableHead className="font-semibold text-center">Articles</TableHead>
-                <TableHead className="font-semibold text-right">Total</TableHead>
-                <TableHead className="font-semibold">Paiement</TableHead>
-                <TableHead className="font-semibold">Statut</TableHead>
-                <TableHead className="font-semibold text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sales.map((sale, index) => (
-                <TableRow
-                  key={sale.id}
-                  className="opacity-0 animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <TableCell>
-                    <code className="text-xs bg-secondary px-2 py-1 rounded font-medium">
-                      {sale.id}
-                    </code>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {sale.date}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full gradient-gold flex items-center justify-center text-primary-foreground text-xs font-semibold">
-                        {sale.customer.charAt(0)}
-                      </div>
-                      <span className="font-medium">{sale.customer}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">{sale.items}</TableCell>
-                  <TableCell className="text-right font-semibold">
-                    {sale.total.toLocaleString()} DA
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      {sale.paymentMethod === "cash" ? (
-                        <>
-                          <Wallet className="h-4 w-4 text-success" />
-                          <span className="text-success text-sm">Espèces</span>
-                        </>
-                      ) : (
-                        <>
-                          <CreditCard className="h-4 w-4 text-warning" />
-                          <span className="text-warning text-sm">Crédit</span>
-                        </>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {sale.status === "completed" ? (
-                      <Badge className="bg-success/10 text-success border-success/20">
-                        Complétée
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-warning/10 text-warning border-warning/20">
-                        En attente
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/50 hover:bg-secondary/50">
+                  <TableHead className="font-semibold">ID</TableHead>
+                  <TableHead className="font-semibold">Date & Heure</TableHead>
+                  <TableHead className="font-semibold">Client</TableHead>
+                  <TableHead className="font-semibold text-right">Total</TableHead>
+                  <TableHead className="font-semibold">Paiement</TableHead>
+                  <TableHead className="font-semibold">Statut</TableHead>
+                  <TableHead className="font-semibold text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredSales.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                      Aucune vente trouvée
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredSales.map((sale, index) => (
+                    <TableRow
+                      key={sale.id}
+                      className="opacity-0 animate-fade-in"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <TableCell>
+                        <code className="text-xs bg-secondary px-2 py-1 rounded font-medium">
+                          {sale.id.slice(0, 8)}
+                        </code>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(new Date(sale.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full gradient-gold flex items-center justify-center text-primary-foreground text-xs font-semibold">
+                            {(sale.customers?.name || "A").charAt(0)}
+                          </div>
+                          <span className="font-medium">
+                            {sale.customers?.name || "Client anonyme"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {Number(sale.total_amount).toLocaleString()} DA
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          {sale.payment_method === "cash" ? (
+                            <>
+                              <Wallet className="h-4 w-4 text-success" />
+                              <span className="text-success text-sm">Espèces</span>
+                            </>
+                          ) : (
+                            <>
+                              <CreditCard className="h-4 w-4 text-warning" />
+                              <span className="text-warning text-sm">Crédit</span>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {sale.status === "completed" ? (
+                          <Badge className="bg-success/10 text-success border-success/20">
+                            Complétée
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-warning/10 text-warning border-warning/20">
+                            En attente
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </DashboardLayout>

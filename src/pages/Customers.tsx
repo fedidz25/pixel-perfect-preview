@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  Plus,
   Search,
   Phone,
   MessageCircle,
@@ -19,119 +19,58 @@ import {
   Users,
   CreditCard,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCustomers } from "@/hooks/useCustomers";
+import { AddCustomerDialog } from "@/components/customers/AddCustomerDialog";
 
-const customers = [
-  {
-    id: 1,
-    name: "Mohamed B.",
-    phone: "+213 555 123 456",
-    totalDebt: 0,
-    lastPurchase: "24/12/2024",
-    totalPurchases: 45000,
-    status: "clear",
-  },
-  {
-    id: 2,
-    name: "Fatima Z.",
-    phone: "+213 666 234 567",
-    totalDebt: 15000,
-    lastPurchase: "24/12/2024",
-    totalPurchases: 128000,
-    status: "overdue",
-    daysOverdue: 35,
-  },
-  {
-    id: 3,
-    name: "Ahmed K.",
-    phone: "+213 777 345 678",
-    totalDebt: 0,
-    lastPurchase: "23/12/2024",
-    totalPurchases: 67000,
-    status: "clear",
-  },
-  {
-    id: 4,
-    name: "Yasmina H.",
-    phone: "+213 555 456 789",
-    totalDebt: 3500,
-    lastPurchase: "22/12/2024",
-    totalPurchases: 34000,
-    status: "pending",
-    daysOverdue: 12,
-  },
-  {
-    id: 5,
-    name: "Karim M.",
-    phone: "+213 666 567 890",
-    totalDebt: 8500,
-    lastPurchase: "24/12/2024",
-    totalPurchases: 89000,
-    status: "pending",
-    daysOverdue: 25,
-  },
-  {
-    id: 6,
-    name: "Sara L.",
-    phone: "+213 777 678 901",
-    totalDebt: 0,
-    lastPurchase: "24/12/2024",
-    totalPurchases: 52000,
-    status: "clear",
-  },
-  {
-    id: 7,
-    name: "Amine R.",
-    phone: "+213 555 789 012",
-    totalDebt: 0,
-    lastPurchase: "23/12/2024",
-    totalPurchases: 41000,
-    status: "clear",
-  },
-  {
-    id: 8,
-    name: "Leila D.",
-    phone: "+213 666 890 123",
-    totalDebt: 5200,
-    lastPurchase: "22/12/2024",
-    totalPurchases: 76000,
-    status: "pending",
-    daysOverdue: 8,
-  },
-];
-
-function getDebtBadge(
-  status: string,
-  debt: number,
-  daysOverdue?: number
-) {
-  if (status === "clear") {
+function getDebtBadge(debt: number) {
+  if (debt === 0) {
     return (
       <Badge className="bg-success/10 text-success border-success/20">
         Aucune dette
       </Badge>
     );
   }
-  if (status === "overdue") {
+  if (debt > 10000) {
     return (
       <Badge variant="destructive" className="gap-1">
         <AlertTriangle className="h-3 w-3" />
-        {debt.toLocaleString()} DA ({daysOverdue}j)
+        {debt.toLocaleString()} DA
       </Badge>
     );
   }
   return (
     <Badge className="bg-warning/10 text-warning border-warning/20">
-      {debt.toLocaleString()} DA ({daysOverdue}j)
+      {debt.toLocaleString()} DA
     </Badge>
   );
 }
 
 export default function Customers() {
-  const totalDebt = customers.reduce((sum, c) => sum + c.totalDebt, 0);
-  const customersWithDebt = customers.filter((c) => c.totalDebt > 0);
-  const overdueCount = customers.filter((c) => c.status === "overdue").length;
+  const { customers, isLoading } = useCustomers();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredCustomers = useMemo(() => {
+    return customers.filter(
+      (customer) =>
+        customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        customer.phone?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [customers, searchTerm]);
+
+  const totalDebt = useMemo(() => {
+    return customers.reduce((sum, c) => sum + Number(c.total_debt), 0);
+  }, [customers]);
+
+  const customersWithDebt = useMemo(() => {
+    return customers.filter((c) => Number(c.total_debt) > 0).length;
+  }, [customers]);
+
+  const overdueCount = useMemo(() => {
+    return customers.filter((c) => Number(c.total_debt) > 10000).length;
+  }, [customers]);
 
   return (
     <DashboardLayout>
@@ -145,10 +84,7 @@ export default function Customers() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="gold" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nouveau client
-            </Button>
+            <AddCustomerDialog />
           </div>
         </div>
 
@@ -183,7 +119,7 @@ export default function Customers() {
           <div className="bg-card rounded-xl border border-border p-4 shadow-card">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Créances en retard</p>
+                <p className="text-sm text-muted-foreground">Créances élevées</p>
                 <p className="text-2xl font-bold text-destructive">
                   {overdueCount}
                 </p>
@@ -202,6 +138,8 @@ export default function Customers() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Rechercher par nom ou téléphone..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -210,80 +148,88 @@ export default function Customers() {
 
         {/* Customers Table */}
         <div className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary/50 hover:bg-secondary/50">
-                <TableHead className="font-semibold">Client</TableHead>
-                <TableHead className="font-semibold">Téléphone</TableHead>
-                <TableHead className="font-semibold">Créance</TableHead>
-                <TableHead className="font-semibold text-right">
-                  Total achats
-                </TableHead>
-                <TableHead className="font-semibold">Dernier achat</TableHead>
-                <TableHead className="font-semibold text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {customers.map((customer, index) => (
-                <TableRow
-                  key={customer.id}
-                  className="opacity-0 animate-fade-in"
-                  style={{ animationDelay: `${index * 50}ms` }}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          "h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold",
-                          customer.status === "clear"
-                            ? "bg-success/10 text-success"
-                            : customer.status === "overdue"
-                            ? "bg-destructive/10 text-destructive"
-                            : "bg-warning/10 text-warning"
-                        )}
-                      >
-                        {customer.name.charAt(0)}
-                      </div>
-                      <span className="font-medium">{customer.name}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      {customer.phone}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {getDebtBadge(
-                      customer.status,
-                      customer.totalDebt,
-                      customer.daysOverdue
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {customer.totalPurchases.toLocaleString()} DA
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {customer.lastPurchase}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-success"
-                      >
-                        <MessageCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary/50 hover:bg-secondary/50">
+                  <TableHead className="font-semibold">Client</TableHead>
+                  <TableHead className="font-semibold">Téléphone</TableHead>
+                  <TableHead className="font-semibold">Adresse</TableHead>
+                  <TableHead className="font-semibold">Créance</TableHead>
+                  <TableHead className="font-semibold text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredCustomers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                      Aucun client trouvé
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredCustomers.map((customer, index) => (
+                    <TableRow
+                      key={customer.id}
+                      className="opacity-0 animate-fade-in"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={cn(
+                              "h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold",
+                              Number(customer.total_debt) === 0
+                                ? "bg-success/10 text-success"
+                                : Number(customer.total_debt) > 10000
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-warning/10 text-warning"
+                            )}
+                          >
+                            {customer.name.charAt(0)}
+                          </div>
+                          <span className="font-medium">{customer.name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {customer.phone ? (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Phone className="h-4 w-4" />
+                            {customer.phone}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {customer.address || "-"}
+                      </TableCell>
+                      <TableCell>{getDebtBadge(Number(customer.total_debt))}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {customer.phone && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-success"
+                            >
+                              <MessageCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </DashboardLayout>
