@@ -68,6 +68,80 @@ export type Database = {
           },
         ]
       }
+      catalog_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          name_ar: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          name_ar?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          name_ar?: string | null
+        }
+        Relationships: []
+      }
+      catalog_products: {
+        Row: {
+          avg_purchase_price: number
+          avg_selling_price: number
+          barcode: string | null
+          category_id: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          name: string
+          name_ar: string | null
+          unit: string | null
+        }
+        Insert: {
+          avg_purchase_price?: number
+          avg_selling_price?: number
+          barcode?: string | null
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name: string
+          name_ar?: string | null
+          unit?: string | null
+        }
+        Update: {
+          avg_purchase_price?: number
+          avg_selling_price?: number
+          barcode?: string | null
+          category_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          name?: string
+          name_ar?: string | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "catalog_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string | null
@@ -247,6 +321,7 @@ export type Database = {
           commerce_name: string | null
           created_at: string
           id: string
+          onboarding_completed: boolean | null
           owner_name: string | null
           phone: string | null
           updated_at: string
@@ -257,6 +332,7 @@ export type Database = {
           commerce_name?: string | null
           created_at?: string
           id: string
+          onboarding_completed?: boolean | null
           owner_name?: string | null
           phone?: string | null
           updated_at?: string
@@ -267,6 +343,7 @@ export type Database = {
           commerce_name?: string | null
           created_at?: string
           id?: string
+          onboarding_completed?: boolean | null
           owner_name?: string | null
           phone?: string | null
           updated_at?: string
