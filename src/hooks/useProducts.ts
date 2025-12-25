@@ -43,6 +43,7 @@ export function useProducts() {
       const { data, error } = await supabase
         .from("products")
         .select("*")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       
       if (error) throw error;
@@ -137,9 +138,11 @@ export function useProducts() {
   });
 
   const getProductByBarcode = async (barcode: string): Promise<Product | null> => {
+    if (!user) return null;
     const { data, error } = await supabase
       .from("products")
       .select("*")
+      .eq("user_id", user.id)
       .eq("barcode", barcode)
       .maybeSingle();
     

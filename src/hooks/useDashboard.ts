@@ -38,21 +38,24 @@ export function useDashboard() {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Get today's sales
+      // Get today's sales for current user
       const { data: todaySales } = await supabase
         .from("sales")
         .select("total_amount")
+        .eq("user_id", user.id)
         .gte("created_at", today.toISOString());
 
-      // Get products count and low stock
+      // Get products count and low stock for current user
       const { data: products } = await supabase
         .from("products")
-        .select("stock_quantity, stock_alert_threshold");
+        .select("stock_quantity, stock_alert_threshold")
+        .eq("user_id", user.id);
 
-      // Get unread alerts
+      // Get unread alerts for current user
       const { data: alerts } = await supabase
         .from("alerts")
         .select("severity")
+        .eq("user_id", user.id)
         .eq("is_read", false);
 
       const todayRevenue = todaySales?.reduce((sum, s) => sum + Number(s.total_amount), 0) || 0;
@@ -84,6 +87,7 @@ export function useDashboard() {
           created_at,
           customers (name)
         `)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(5);
 
