@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useProducts, Product } from "@/hooks/useProducts";
 import { useCustomers } from "@/hooks/useCustomers";
 import { useSales, SaleItem } from "@/hooks/useSales";
-import { Plus, Minus, Trash2, Search, ShoppingCart, Wallet, CreditCard, X } from "lucide-react";
+import { Plus, Minus, Trash2, Search, ShoppingCart, Wallet, CreditCard, X, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { SaleReceiptDialog } from "./SaleReceiptDialog";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 
 interface CartItem {
   product: Product;
@@ -41,9 +42,34 @@ export function NewSaleDialog() {
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   const { toast } = useToast();
 
-  const { products } = useProducts();
+  const { products, getProductByBarcode } = useProducts();
   const { customers } = useCustomers();
   const { createSale } = useSales();
+
+  const handleBarcodeScan = useCallback(async (barcode: string) => {
+    try {
+      const product = await getProductByBarcode(barcode);
+      if (product) {
+        addToCart(product);
+        toast({
+          title: "Produit ajouté",
+          description: `${product.name} ajouté au panier`,
+        });
+      } else {
+        toast({
+          title: "Produit non trouvé",
+          description: `Aucun produit avec le code-barres ${barcode}`,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de rechercher le produit",
+        variant: "destructive",
+      });
+    }
+  }, [getProductByBarcode, toast]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => 
@@ -199,13 +225,23 @@ export function NewSaleDialog() {
           <div className="flex-1 grid grid-cols-2 gap-4 min-h-0">
             {/* Left side - Product selection */}
             <div className="flex flex-col min-h-0">
-              <div className="relative mb-3">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher un produit..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+              <div className="flex gap-2 mb-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher un produit..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <BarcodeScanner 
+                  onScan={handleBarcodeScan}
+                  trigger={
+                    <Button variant="outline" size="icon" title="Scanner code-barres">
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  }
                 />
               </div>
               <ScrollArea className="flex-1 border rounded-lg">
