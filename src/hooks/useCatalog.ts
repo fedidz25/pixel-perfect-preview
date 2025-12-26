@@ -1,52 +1,46 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { catalogCategories, CatalogCategoryData, CatalogProductData, getTotalProductCount } from "@/data/catalogData";
 
 export interface CatalogCategory {
   id: string;
   name: string;
-  name_ar: string | null;
-  icon: string | null;
-  color: string | null;
+  name_ar: string;
+  icon: string;
+  color: string;
 }
 
 export interface CatalogProduct {
   id: string;
-  category_id: string | null;
+  category_id: string;
   name: string;
-  name_ar: string | null;
-  barcode: string | null;
+  name_ar: string;
+  barcode: string;
   avg_purchase_price: number;
   avg_selling_price: number;
-  image_url: string | null;
-  unit: string | null;
+  unit: string;
 }
 
 export function useCatalog() {
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ["catalog-categories"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("catalog_categories")
-        .select("*")
-        .order("name");
-      
-      if (error) throw error;
-      return data as CatalogCategory[];
-    },
-  });
+  // Convert catalog data to the expected format
+  const categories: CatalogCategory[] = catalogCategories.map((cat, index) => ({
+    id: `cat-${index}`,
+    name: cat.name,
+    name_ar: cat.name_ar,
+    icon: cat.icon,
+    color: cat.color,
+  }));
 
-  const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ["catalog-products"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("catalog_products")
-        .select("*")
-        .order("name");
-      
-      if (error) throw error;
-      return data as CatalogProduct[];
-    },
-  });
+  const products: CatalogProduct[] = catalogCategories.flatMap((cat, catIndex) =>
+    cat.products.map((prod, prodIndex) => ({
+      id: `prod-${catIndex}-${prodIndex}`,
+      category_id: `cat-${catIndex}`,
+      name: prod.name,
+      name_ar: prod.name_ar,
+      barcode: prod.barcode,
+      avg_purchase_price: prod.avg_purchase_price,
+      avg_selling_price: prod.avg_selling_price,
+      unit: prod.unit,
+    }))
+  );
 
   const getProductsByCategory = (categoryId: string) => {
     return products.filter(p => p.category_id === categoryId);
@@ -64,8 +58,9 @@ export function useCatalog() {
   return {
     categories,
     products,
-    isLoading: categoriesLoading || productsLoading,
+    isLoading: false,
     getProductsByCategory,
     searchProducts,
+    totalCount: getTotalProductCount(),
   };
 }
