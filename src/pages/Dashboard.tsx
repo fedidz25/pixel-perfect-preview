@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { RecentSales } from "@/components/dashboard/RecentSales";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { SalesChart } from "@/components/dashboard/SalesChart";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import {
   TrendingUp,
   ShoppingCart,
@@ -12,10 +14,26 @@ import {
 } from "lucide-react";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { useProducts } from "@/hooks/useProducts";
+import { useRealtimeAlerts } from "@/hooks/useRealtimeAlerts";
 
 export default function Dashboard() {
   const { stats, isLoading } = useDashboard();
   const { user } = useAuth();
+  const { profile } = useProfile();
+  const { products } = useProducts();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Enable realtime alerts
+  useRealtimeAlerts();
+
+  // Show onboarding wizard for new users (no products yet)
+  useEffect(() => {
+    if (profile && products.length === 0 && !profile.commerce_name) {
+      setShowOnboarding(true);
+    }
+  }, [profile, products.length]);
 
   return (
     <DashboardLayout>
@@ -91,6 +109,12 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Onboarding Wizard */}
+      <OnboardingWizard 
+        open={showOnboarding} 
+        onComplete={() => setShowOnboarding(false)} 
+      />
     </DashboardLayout>
   );
 }
