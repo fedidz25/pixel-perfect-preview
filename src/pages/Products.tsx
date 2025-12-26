@@ -29,8 +29,10 @@ import {
 import { useProducts } from "@/hooks/useProducts";
 import { AddProductDialog } from "@/components/products/AddProductDialog";
 import { ImportExcelDialog } from "@/components/products/ImportExcelDialog";
+import { CatalogSelector } from "@/components/onboarding/CatalogSelector";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
+import { BookOpen } from "lucide-react";
 
 function getStockBadge(stock: number, threshold: number = 10) {
   if (stock === 0) {
@@ -58,6 +60,7 @@ function getStockBadge(stock: number, threshold: number = 10) {
 
 export default function Products() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const { products, isLoading, deleteProduct } = useProducts();
   const { toast } = useToast();
 
@@ -116,6 +119,10 @@ export default function Products() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Button variant="outline" className="gap-2" onClick={() => setCatalogOpen(true)}>
+              <BookOpen className="h-4 w-4" />
+              Catalogue
+            </Button>
             <ImportExcelDialog />
             <Button variant="outline" className="gap-2" onClick={handleExport}>
               <Download className="h-4 w-4" />
@@ -124,6 +131,13 @@ export default function Products() {
             <AddProductDialog />
           </div>
         </div>
+
+        {/* Catalog Selector */}
+        <CatalogSelector
+          open={catalogOpen}
+          onOpenChange={setCatalogOpen}
+          onComplete={() => setCatalogOpen(false)}
+        />
 
         {/* Filters */}
         <div className="bg-card rounded-xl border border-border p-4 mb-6 shadow-card">
