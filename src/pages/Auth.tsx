@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Package, Mail, Lock, User, Store, Phone, MapPin, ArrowRight } from "lucide-react";
+import { Package, Mail, Lock, User, Store, Phone, MapPin, ArrowRight, Download } from "lucide-react";
 import { z } from "zod";
 
 const loginSchema = z.object({
@@ -370,12 +370,23 @@ export default function Auth() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
 
-                <p className="text-xs text-center text-muted-foreground">
+              <p className="text-xs text-center text-muted-foreground">
                   En créant un compte, vous acceptez nos conditions d'utilisation
                 </p>
               </form>
             </TabsContent>
           </Tabs>
+
+          {/* Install PWA Link */}
+          <div className="mt-6 pt-6 border-t border-border">
+            <Link 
+              to="/install" 
+              className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              Installer l'application sur votre téléphone
+            </Link>
+          </div>
         </div>
       </div>
     </div>
