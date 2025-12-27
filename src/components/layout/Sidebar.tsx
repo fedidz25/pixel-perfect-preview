@@ -11,9 +11,11 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart3,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { NotificationButton } from "@/components/notifications/NotificationButton";
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: LayoutDashboard },
@@ -26,6 +28,7 @@ const navigation = [
 
 const secondaryNavigation = [
   { name: "Paramètres", href: "/settings", icon: Settings },
+  { name: "Installer l'app", href: "/install", icon: Download },
 ];
 
 export function Sidebar() {
@@ -79,6 +82,14 @@ export function Sidebar() {
 
       {/* Secondary navigation */}
       <div className="px-3 py-4 border-t border-border space-y-1">
+        {/* Notification button */}
+        {!collapsed && (
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-sm text-muted-foreground">Notifications</span>
+            <NotificationButton />
+          </div>
+        )}
+        
         {secondaryNavigation.map((item) => {
           const isActive = location.pathname === item.href;
           return (
