@@ -19,6 +19,7 @@ import {
   Trash2,
   Package,
   Loader2,
+  Camera,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -30,6 +31,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { AddProductDialog } from "@/components/products/AddProductDialog";
 import { ImportExcelDialog } from "@/components/products/ImportExcelDialog";
 import { CatalogSelector } from "@/components/onboarding/CatalogSelector";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 import * as XLSX from "xlsx";
 import { useToast } from "@/hooks/use-toast";
 import { BookOpen } from "lucide-react";
@@ -151,6 +153,15 @@ export default function Products() {
                 className="pl-10"
               />
             </div>
+            <BarcodeScanner 
+              onScan={(barcode) => setSearchQuery(barcode)}
+              trigger={
+                <Button variant="outline" className="gap-2">
+                  <Camera className="h-4 w-4" />
+                  Scanner
+                </Button>
+              }
+            />
           </div>
         </div>
 

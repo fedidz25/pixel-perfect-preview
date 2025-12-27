@@ -100,8 +100,8 @@ export default {
           to: { opacity: "1", transform: "scale(1)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(38 92% 50% / 0.3)" },
-          "50%": { boxShadow: "0 0 40px hsl(38 92% 50% / 0.5)" },
+          "0%, 100%": { boxShadow: "0 0 20px hsl(210 90% 50% / 0.3)" },
+          "50%": { boxShadow: "0 0 40px hsl(210 90% 50% / 0.5)" },
         },
         "count-up": {
           from: { opacity: "0", transform: "translateY(10px)" },
