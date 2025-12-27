@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Package, Mail, Lock, User, Store, Phone, MapPin, ArrowRight, Download } from "lucide-react";
 import { z } from "zod";
+import logo from '@/assets/logo.png';
 
 const loginSchema = z.object({
   email: z.string().email("Email invalide"),
@@ -144,9 +145,7 @@ export default function Auth() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent" />
         <div className="relative z-10 flex flex-col justify-center p-12 text-foreground">
           <div className="flex items-center gap-4 mb-8">
-            <div className="h-16 w-16 rounded-2xl gradient-gold flex items-center justify-center shadow-glow">
-              <Package className="h-8 w-8 text-primary-foreground" />
-            </div>
+            <img src={logo} alt="Stock DZ" className="h-16 w-16 object-contain" />
             <div>
               <h1 className="text-4xl font-bold text-card">Stock DZ</h1>
               <p className="text-card/70">Gestion de stock simplifiée</p>
@@ -189,9 +188,7 @@ export default function Auth() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-3 justify-center mb-8">
-            <div className="h-12 w-12 rounded-xl gradient-gold flex items-center justify-center shadow-md">
-              <Package className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img src={logo} alt="Stock DZ" className="h-12 w-12 object-contain" />
             <div>
               <h1 className="text-2xl font-bold text-foreground">Stock DZ</h1>
               <p className="text-sm text-muted-foreground">Gestion de stock</p>

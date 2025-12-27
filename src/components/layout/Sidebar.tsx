@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NotificationButton } from "@/components/notifications/NotificationButton";
+import logo from '@/assets/logo.png';
 
 const navigation = [
   { name: "Tableau de bord", href: "/", icon: LayoutDashboard },
@@ -45,9 +46,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex h-20 items-center justify-between px-4 border-b border-border">
         <div className={cn("flex items-center gap-3", collapsed && "justify-center w-full")}>
-          <div className="h-10 w-10 rounded-xl gradient-gold flex items-center justify-center shadow-md">
-            <Package className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img src={logo} alt="Stock DZ" className="h-10 w-10 object-contain" />
           {!collapsed && (
             <div className="animate-fade-in">
               <h1 className="text-lg font-bold text-foreground">Stock DZ</h1>

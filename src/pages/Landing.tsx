@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Package, 
   Menu, 
   X, 
   ArrowRight, 
@@ -14,8 +13,10 @@ import {
   Shield,
   Check,
   MessageCircle,
-  Download
+  Download,
+  Package
 } from 'lucide-react';
+import logo from '@/assets/logo.png';
 
 // Navbar Component
 const Navbar = () => {
@@ -28,9 +29,7 @@ const Navbar = () => {
       <div className="container mx-auto px-4 relative">
         <div className="flex items-center justify-between h-20">
           <div className="flex items-center gap-2 text-primary-foreground">
-            <div className="h-10 w-10 rounded-xl bg-primary-foreground/20 backdrop-blur-sm flex items-center justify-center">
-              <Package className="h-6 w-6" />
-            </div>
+            <img src={logo} alt="Stock DZ" className="h-10 w-10 object-contain" />
             <span className="text-xl font-bold">Stock DZ</span>
           </div>
 

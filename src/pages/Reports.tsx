@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,12 +26,52 @@ import {
   Package,
   BarChart3,
   Loader2,
+  FileText,
 } from "lucide-react";
 import { useReports, Period } from "@/hooks/useReports";
-
+import { useProfile } from "@/hooks/useProfile";
+import { generateSalesReportPDF, downloadPDF } from "@/utils/pdfGenerator";
+import { useToast } from "@/hooks/use-toast";
+import logo from '@/assets/logo.png';
 export default function Reports() {
   const [period, setPeriod] = useState<Period>("week");
   const { stats, dailyData, topProducts, isLoading } = useReports(period);
+  const { profile } = useProfile();
+  const { toast } = useToast();
+  const [logoBase64, setLogoBase64] = useState<string>("");
+
+  useEffect(() => {
+    // Convert logo to base64
+    fetch(logo)
+      .then(res => res.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setLogoBase64(reader.result as string);
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(console.error);
+  }, []);
+
+  const handleExportPDF = () => {
+    const reportData = {
+      commerceName: profile?.commerce_name || 'Stock DZ',
+      ownerName: profile?.owner_name || '',
+      period: periodLabels[period],
+      stats,
+      dailyData,
+      topProducts,
+    };
+
+    const doc = generateSalesReportPDF(reportData, logoBase64);
+    downloadPDF(doc, `rapport-ventes-${period}-${new Date().toISOString().split('T')[0]}.pdf`);
+    
+    toast({
+      title: "Rapport exporté",
+      description: "Le fichier PDF a été téléchargé",
+    });
+  };
 
   const periodLabels: Record<Period, string> = {
     today: "Aujourd'hui",
@@ -52,6 +92,15 @@ export default function Reports() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={handleExportPDF}
+              disabled={isLoading}
+            >
+              <FileText className="h-4 w-4" />
+              Exporter PDF
+            </Button>
             <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Période" />
