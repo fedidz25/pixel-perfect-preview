@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Package,
@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { NotificationButton } from "@/components/notifications/NotificationButton";
+import { useAuth } from "@/contexts/AuthContext";
 import logo from '@/assets/logo.png';
 
 const navigation = [
@@ -35,6 +36,13 @@ const secondaryNavigation = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   return (
     <aside
@@ -110,6 +118,7 @@ export function Sidebar() {
         })}
 
         <button
+          onClick={handleSignOut}
           className={cn(
             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium w-full transition-all duration-200 text-destructive hover:bg-destructive/10",
             collapsed && "justify-center px-0"

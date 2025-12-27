@@ -1,3 +1,4 @@
+import React from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,7 +32,7 @@ const getAlertIcon = (type: string) => {
   }
 };
 
-function AlertCard({
+const AlertCard = React.memo(function AlertCard({
   alert,
   index,
   onMarkAsRead,
@@ -114,7 +115,7 @@ function AlertCard({
       </div>
     </div>
   );
-}
+});
 
 export default function Alerts() {
   const { 
